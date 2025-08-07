@@ -18,6 +18,17 @@ Currently supports Unitree **Go2**, **H1** and **G1-29dof** robots.
 
 </div>
 
+## 🔁 Process 
+
+The basic workflow for using reinforcement learning to achieve motion control is:
+
+`Train` → `Play` → `Sim2Sim` → `Sim2Real`
+
+- **Train**: Use the Lab simulation environment to let the robot interact with the environment and find a policy that maximizes the designed rewards. Real-time visualization during training is not recommended to avoid reduced efficiency.
+- **Play**: Use the Play command to verify the trained policy and ensure it meets expectations.
+- **Sim2Sim**: Deploy the Gym-trained policy to other simulators to ensure it’s not overly specific to Gym characteristics.
+- **Sim2Real**: Deploy the policy to a physical robot to achieve motion control.
+
 ## Installation
 
 - Install Isaac Lab by following the [installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html).
@@ -40,6 +51,11 @@ Currently supports Unitree **Go2**, **H1** and **G1-29dof** robots.
     ```bash
     git clone https://huggingface.co/datasets/unitreerobotics/unitree_model
     ```
+  - If you don't have [LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage), by default it will clone only references to large files. After installing it, go to the `unitree_model` directory, install LFS and pull the large files.
+    ```bash
+    git lfs install
+    git lfs pull
+    ``` 
   - Config `UNITREE_MODEL_DIR` in `source/unitree_rl_lab/unitree_rl_lab/assets/robots/unitree.py`.
 
     ```bash
@@ -50,23 +66,29 @@ Currently supports Unitree **Go2**, **H1** and **G1-29dof** robots.
   - Listing the available tasks:
 
     ```bash
-    python scripts/list_envs.py
-    ```
-  - Running a task:
-
-    ```bash
-    python scripts/rsl_rl/train.py --headless --task Unitree-G1-29dof-Velocity
-    ```
-  - Inference with a trained agent:
-
-    ```bash
-    python scripts/rsl_rl/play.py --task Unitree-G1-29dof-Velocity
+    python unitree_rl_lab/scripts/list_envs.py
     ```
 
-## Deploy
+## Train
 
-After the model training is completed, we need to perform sim2sim on the trained strategy in Mujoco to test the performance of the model.
-Then deploy sim2real.
+- Running a task:
+
+  ```bash
+  python unitree_rl_lab/scripts/rsl_rl/train.py --headless --task Unitree-G1-29dof-Velocity
+  ```
+
+## Play
+
+- Inference with a trained agent:
+
+  ```bash
+  python unitree_rl_lab/scripts/rsl_rl/play.py --task Unitree-G1-29dof-Velocity
+  ```
+
+## Sim2Sim
+
+After the model training is completed, we need to perform Sim2Sim on the trained strategy in MuJoCo to test the performance of the model.
+Then deploy Sim2Real.
 
 ### Setup
 
@@ -87,22 +109,22 @@ cmake .. && make
 
 ### Sim2Sim
 
-Installing the [unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco?tab=readme-ov-file#installation).
+Install the [unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco?tab=readme-ov-file#installation).
 
 - Set the `robot` at `/simulate/config.yaml` to g1
 - Set `domain_id` to 0
-- Set `enable_elastic_hand` to 1
+- Set `enable_elastic_band` to 1
 - Set `use_joystck` to 1.
 
 ```bash
 # start simulation
 cd unitree_mujoco/simulate/build
-./unitree_mujoco
+sudo ./unitree_mujoco
 ```
 
 ```bash
 cd unitree_rl_lab/deploy/robots/g1_29dof/build
-./g1_ctrl
+sudo ./g1_ctrl --network lo
 # 1. press [L2 + Up] to set the robot to stand up
 # 2. Click the mujoco window, and then press 8 to make the robot feet touch the ground.
 # 3. Press [R1 + X] to run the policy.
@@ -111,10 +133,10 @@ cd unitree_rl_lab/deploy/robots/g1_29dof/build
 
 ### Sim2Real
 
-You can use this program to control the robot directly, but make sure the on-borad control program has been closed.
+You can use this program to control the robot directly, but make sure the on-board control program has been closed.
 
 ```bash
-./g1_ctrl --network eth0 # eth0 is the network interface name.
+sudo ./g1_ctrl --network <eth0/enp2s0/etc> # the network interface name.
 ```
 
 ## Acknowledgements
