@@ -1,14 +1,30 @@
-# Unitree RL Lab
+# RL Pipeline for G1-29dof
 
 [![IsaacSim](https://img.shields.io/badge/IsaacSim-4.5.0-silver.svg)](https://docs.omniverse.nvidia.com/isaacsim/latest/overview.html)
-[![Isaac Lab](https://img.shields.io/badge/IsaacLab-2.0.0-silver)](https://isaac-sim.github.io/IsaacLab)
+[![Isaac Lab](https://img.shields.io/badge/IsaacLab-2.1.1-silver)](https://isaac-sim.github.io/IsaacLab)
+[![Unitree RL Lab](https://img.shields.io/badge/unitree_rl_lab-1.0.0-silver.svg)](https://github.com/unitreerobotics/unitree_rl_lab)
+[![MuJoCo](https://img.shields.io/badge/mujoco-v3.2.7-silver)](https://mujoco.readthedocs.io/en/stable/overview.html)
+[![Unitree_Mujoco](https://img.shields.io/badge/unitree_mujoco-1.0.0-silver)](https://github.com/unitreerobotics/unitree_mujoco)
 [![License](https://img.shields.io/badge/license-Apache2.0-yellow.svg)](https://opensource.org/license/apache-2-0)
+
+## Table of Contents
+1. [Overview](#overview)
+    * [Process](#-process)
+3. [Installation](#-installation)
+4. [Pipeline](#-pipeline)
+    * [Training policy](#training-policy)
+    * [Testing policy](#testing-policy)
+    * [Sim2Sim](#sim2sim)
+    * [Sim2Real](#sim2real)
+9. [Contributions](#-contributions)
+10. [Troubleshooting](#-troubleshooting)
+11. [Acknowledgements](#acknowledgements)
 
 ## Overview
 
-This project provides a set of reinforcement learning environments for Unitree robots, built on top of [IsaacLab](https://github.com/isaac-sim/IsaacLab).
+This project describes the pipeline for reinforcement learning on Unitree G1 (29 dof) tested at [Kantaros Lab](https://sites.wustl.edu/kantaroslab/) in Washington University in St. Louis and it's based on the repository [unitree_rl_lab](https://github.com/unitreerobotics/unitree_rl_lab), which provides a set of reinforcement learning environments for Unitree robots and it's built on top of [IsaacLab](https://github.com/isaac-sim/IsaacLab). Currently, the `unitree_rl_lab` supports Unitree **Go2**, **H1** and **G1-29dof** robots.
 
-Currently supports Unitree **Go2**, **H1** and **G1-29dof** robots.
+As part of this project, I was recommended to install a dual boot of Windows 11 and Ubuntu 22.04.5 LTS, which it was done by the main author and the steps taken have been documented in ``.
 
 <div align="center">
 
@@ -18,21 +34,37 @@ Currently supports Unitree **Go2**, **H1** and **G1-29dof** robots.
 
 </div>
 
-## 🔁 Process 
+### 🔁 Process
 
 The basic workflow for using reinforcement learning to achieve motion control is:
 
 `Train` → `Play` → `Sim2Sim` → `Sim2Real`
 
-- **Train**: Use the Lab simulation environment to let the robot interact with the environment and find a policy that maximizes the designed rewards. Real-time visualization during training is not recommended to avoid reduced efficiency.
+- **Train**: Use of Isaac Lab simulation environment to let the robot interact with the environment and find a policy that maximizes the designed rewards. Real-time visualization during training is not recommended to avoid reduced efficiency.
 - **Play**: Use the Play command to verify the trained policy and ensure it meets expectations.
-- **Sim2Sim**: Deploy the Gym-trained policy to other simulators to ensure it’s not overly specific to Gym characteristics.
+- **Sim2Sim**: Deploy the Lab-trained policy to other simulators to ensure it’s not overly specific to Isaac Lab characteristics.
 - **Sim2Real**: Deploy the policy to a physical robot to achieve motion control.
 
 ## Installation
 
-- Install Isaac Lab by following the [installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html).
-- Install the Unitree RL IsaacLab standalone environments.
+- Install NVIDIA Driver
+  - Isaac Sim/Lab has certain [requirements](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/requirements.html) for versions of the drivers. For the tests of this pipeline, we have used `570.169`.
+- Install Isaac Sim (4.5.0)
+  - Follow the instructions for the version [4.5.0](https://docs.isaacsim.omniverse.nvidia.com/latest/installation/install_workstation.html)
+- Install Isaac Lab by following the [installation guide](http://isaac-sim.github.io/IsaacLab/v2.1.1/source/setup/installation/binaries_installation.html).
+  - When cloning the Isaaclab GitHub, make sure to change to the version v2.1.1 by:
+    ```bash
+    cd Isaaclab
+    git checkout v2.1.1
+    ```
+  - After installing Miniconda, make sure you are not in an enviroment before you run:
+    ```bash
+    # Option 1: Default name for conda environment is 'env_isaaclab'
+    ./isaaclab.sh --conda  # or "./isaaclab.sh -c"
+    # Option 2: Custom name for conda environment
+    ./isaaclab.sh --conda my_env  # or "./isaaclab.sh -c my_env"
+    ```
+- Install the Unitree RL Lab standalone environments.
 
   - Clone or copy this repository separately from the Isaac Lab installation (i.e. outside the `IsaacLab` directory):
 
@@ -69,7 +101,8 @@ The basic workflow for using reinforcement learning to achieve motion control is
     python unitree_rl_lab/scripts/list_envs.py
     ```
 
-## Train
+
+### Training policy
 
 - Running a task:
 
@@ -77,7 +110,7 @@ The basic workflow for using reinforcement learning to achieve motion control is
   python unitree_rl_lab/scripts/rsl_rl/train.py --headless --task Unitree-G1-29dof-Velocity
   ```
 
-## Play
+### Testing policy
 
 - Inference with a trained agent:
 
@@ -85,27 +118,14 @@ The basic workflow for using reinforcement learning to achieve motion control is
   python unitree_rl_lab/scripts/rsl_rl/play.py --task Unitree-G1-29dof-Velocity
   ```
 
-## Sim2Sim
+### Sim2Sim
 
 After the model training is completed, we need to perform Sim2Sim on the trained strategy in MuJoCo to test the performance of the model.
 Then deploy Sim2Real.
 
 ### Setup
 
-```bash
-# Install dependencies
-sudo apt install -y libyaml-cpp-dev libboost-all-dev libeigen3-dev libspdlog-dev
-# Install unitree_sdk2
-git clone git@github.com:unitreerobotics/unitree_sdk2.git
-cd unitree_sdk2
-mkdir build && cd build
-cmake .. -DBUILD_EXAMPLES=OFF # Install on the /usr/local directory
-sudo make install
-# Compile the robot_controller
-cd deploy/robots/g1_29dof # or other robots
-mkdir build && cd build
-cmake .. && make
-```
+
 
 ### Sim2Sim
 
